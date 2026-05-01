@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#FFF8EC"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>Rewardify</title>
+<link rel="stylesheet" href="styles.css"/>
+<style>
+  /* Mobile-first responsive scaling for the phone frame.
+     Default desktop CSS renders 2 phones at 402x874 each (804px + 28px gap).
+     On narrow screens we scale .frames to fit the viewport. */
+  html, body { background: #E8E4DA; }
+  body { overscroll-behavior: none; }
+  .stage {
+    /* allow flex layout to determine size, then we scale the inner .frames */
+    overflow: hidden;
+  }
+  /* JS-driven scale variable; fallback to 1 if JS hasn't run yet */
+  .frames {
+    transform: scale(var(--fit-scale, 1));
+    transform-origin: center center;
+  }
+  /* On mobile, hide the dual-phone layout: only show the active role */
+  @media (max-width: 720px) {
+    .frames { gap: 0; }
+    .view-switch {
+      top: max(8px, env(safe-area-inset-top, 0px));
+    }
+  }
+  /* Fix the view-switch to remain tappable above safe areas */
+  @supports (padding: max(0px)) {
+    .view-switch { top: max(14px, env(safe-area-inset-top, 14px)); }
+  }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="pip-duo.jsx"></script>
+<script type="text/babel" src="mascot.jsx"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="shared.jsx"></script>
+<script type="text/babel" src="kid-screens.jsx"></script>
+<script type="text/babel" src="kid-screens-2.jsx"></script>
+<script type="text/babel" src="coin-garden-data.jsx"></script>
+<script type="text/babel" src="coin-garden-art.jsx"></script>
+<script type="text/babel" src="coin-garden-screens.jsx"></script>
+<script type="text/babel" src="coin-garden-parent.jsx"></script>
+<script type="text/babel" src="parent-screens.jsx"></script>
+<script type="text/babel" src="onboarding.jsx"></script>
+</head>
+<body>
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" fill="#FFF8EC"/>
+    <rect x="20" y="20" width="60" height="60" rx="14" fill="#FF6B35"/>
+    <text x="50" y="68" text-anchor="middle" font-family="Fraunces, serif" font-weight="800" font-size="44" fill="#fff">R</text>
+  </svg>
+</template>
+<div id="root"></div>
+
+<script type="text/babel" src="app.jsx"></script>
+<script type="text/babel">
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+<script>
+/* Mobile fit-to-viewport scaler.
+   Computes the largest scale that lets the .frames element fit the viewport,
+   accounting for the view-switch chrome at top and a small safety margin.
+   Updates a CSS variable; CSS handles the rest. */
+(function () {
+  function fit() {
+    var stage = document.querySelector('.stage');
+    var frames = document.querySelector('.frames');
+    if (!stage || !frames) return;
+    // Reset transform to measure natural size
+    var prev = frames.style.transform;
+    frames.style.transform = 'scale(1)';
+    var w = frames.offsetWidth, h = frames.offsetHeight;
+    frames.style.transform = prev;
+    if (!w || !h) return;
+    // Available area: viewport minus chrome (view-switch ~70px) and safe areas
+    var chromeTop = 80;
+    var marginX = 16, marginBottom = 16;
+    var availW = window.innerWidth - marginX * 2;
+    var availH = window.innerHeight - chromeTop - marginBottom;
+    var scale = Math.min(availW / w, availH / h, 1);
+    // On wide screens we cap at 1 (don't enlarge); on mobile this scales down.
+    document.documentElement.style.setProperty('--fit-scale', scale.toFixed(4));
+  }
+  // Run after first paint so React has mounted .frames
+  if (document.readyState === 'complete') setTimeout(fit, 60);
+  else window.addEventListener('load', function () { setTimeout(fit, 60); });
+  // Also re-run when React likely finishes (covers Babel async)
+  setTimeout(fit, 400);
+  setTimeout(fit, 1200);
+  setTimeout(fit, 2500);
+  window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', fit);
+  // Observe DOM mutations on root in case frames mount later
+  var mo = new MutationObserver(function () { fit(); });
+  mo.observe(document.body, { childList: true, subtree: true });
+  setTimeout(function () { mo.disconnect(); }, 5000);
+})();
+</script>
+</body>
+</html>
